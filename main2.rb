@@ -33,26 +33,6 @@ loop {                          # Servers run forever
         
         imap = TCPSocket.open("localhost", 9143)
         
-        res = get_response(imap)
-        client.puts res
-        puts "1S: " + res
-        
-        res = get_response(client)
-        imap.puts res
-        puts "1C: " + res
-
-        res = get_response(imap)
-        client.puts res[0,5] + "NO unsupported authentication"
-        puts "1S: " + res[0,5] + "NO unsupported authentication"
-
-        res = get_response(client)
-        imap.puts res
-        puts "1C: " + res
-        
-
-        
-        
-        
         # * OK [CAPABILITY IMAP4rev1 AUTH=PLAIN] Server ready
         res = get_response(imap)
         client.puts res
