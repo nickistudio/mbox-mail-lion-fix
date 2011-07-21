@@ -1,5 +1,8 @@
-require 'socket'                # Get sockets from stdlib
-require 'net/imap.rb'
+# Mbox Mail for Mac Lion Fix
+# Created by Nicholas Workshop
+
+require 'socket'
+require 'base64'
 
 #function to get response
 def get_response(sock)
@@ -21,88 +24,62 @@ def get_response(sock)
     return buff#parser.parse(buff)
 end
 
-
-#require 'digest/sha1'
-#code = 0.chr + 'nicho29@live.hk' + 0.chr + '12345'
-#puts Digest::SHA1.hexdigest(code)
-
-
-server = TCPServer.open(9142)   # Socket to listen on port 2000
-loop {                          # Servers run forever
+server = TCPServer.open(9142)
+while true
     Thread.start(server.accept) do |client|
         
-        imap = TCPSocket.open("localhost", 9143)
+        mbox = TCPSocket.open("localhost", 9143)
         
-        res = get_response(imap)
+        # S: * OK [CAPABILITY IMAP4rev1 AUTH=PLAIN] Server ready
+        res = get_response(mbox)
+        puts "S: " + res
         client.puts res
-        puts "1S: " + res
         
+        # C: A01 AUTHENTICATE PLAIN
         res = get_response(client)
-        imap.puts res
-        puts "1C: " + res
-
-        res = get_response(imap)
-        client.puts res[0,5] + "NO unsupported authentication"
-        puts "1S: " + res[0,5] + "NO unsupported authentication"
-
-        res = get_response(client)
-        imap.puts res
-        puts "1C: " + res
+        puts "C: " + res
+        code = res.split[0]
         
-
-        
-        
-        
-        # * OK [CAPABILITY IMAP4rev1 AUTH=PLAIN] Server ready
-        res = get_response(imap)
-        client.puts res
-        puts "1S: " + res
-        
-        # 1.721 AUTHENTICATE PLAIN
-        res = get_response(client)
-        code = res[0,5]
-        imap.puts code + " login nicho29@live.hk Joanne26***\r\n"
-        #imap.puts res
-        puts "1C: " + res
-        
-        #res = get_response(imap)
-        puts get_response(imap)
-        
+        # S: +
         res = "+\r\n"
+        puts "S: " + res
         client.puts res
-        puts "2S: " + res
         
-        print "2C: "
+        # C: XXXXXXXXXXXXXXXXXXXXXXX
         res = get_response(client)
-        puts res
-        imap.puts res
+        puts "C: " + res
+        secret = res
         
-        print "3S: "
-        #puts "adf " + get_response(imap)
-        res = code + " OK Success\r\n"
-        puts res
+        # Decrypt & login
+        command = code + "login" + Base64.decode64(res).gsub(0.chr," ")
+        puts "Manual Login"
+        mbox.puts command
+        
+        # S: A01 OK Success / NO Failure
+        res = get_response(mbox)
+        puts "S: " + res
         client.puts res
         
+        # Login finished
         while true
-            print "C: "
             res = get_response(client)
-            puts res
-            imap.puts res
+            puts "C: " + res
+            mbox.puts res
             
-            code = res[0,5]
+            code = res.split[0]
             
             while true
-                print "S: "
-                res = get_response(imap)
-                puts res
+                res = get_response(mbox)
+                puts "S: " + res
                 client.puts res
-                if res[0,5] == code 
+                
+                if res.split[0] == code 
                     break
                 end
             end
         end
         
-        puts "Closing the connection. Bye!"
-    client.close                # Disconnect from the client
-  end
-}
+        puts "Closing connection. Bye!"
+        client.close
+    end
+end
