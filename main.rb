@@ -51,8 +51,8 @@ while true
         secret = res
         
         # Decrypt & login
-        command = code + "login" + Base64.decode64(res).gsub(0.chr," ")
-        puts "Manual Login"
+        command = code + " login" + Base64.decode64(res).gsub(0.chr," ") + "\r\n"
+        puts "C: " + command
         mbox.puts command
         
         # S: A01 OK Success / NO Failure
